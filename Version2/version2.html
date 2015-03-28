@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Network | Basic usage</title>
+
+  <script type="text/javascript" src="../../dist/vis.js"></script>
+  <link href="../../dist/vis.css" rel="stylesheet" type="text/css" />
+
+  <style type="text/css">
+    #mynetwork {
+      width: 500px;
+      height: 400px;
+      border: 1px solid lightgray;
+    }
+	#mynetwork1 {
+      width: 500px;
+      height: 400px;
+      border: 1px solid lightgray;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="mynetwork"></div> 
+<div id="mynetwork1"></div>
+
+<script type="text/javascript" src="../../dist/vis.js"></script>
+<link href="../../dist/vis.css" rel="stylesheet" type="text/css" />
+<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+
+<script type="text/javascript">
+
+	var nodes;
+	var edges;
+	var network;
+	
+	
+	$.getJSON('http://localhost/test1.php', function(data) 
+	{
+        nodes = new vis.DataSet();
+		edges = new vis.DataSet();
+		
+		nodes.add(data.nodes);
+		edges.add(data.edges);
+		
+		var container = document.getElementById('mynetwork');
+		
+		var data = {
+			nodes: nodes,
+			edges: edges
+		};
+		
+		var options = {
+			stabilize: false,
+			navigation: true,
+			keyboard: true,
+
+			};
+		
+		network = new vis.Network(container, data, options);
+			
+		
+		var selectednode;
+		var container1;
+		
+		network.on('select', function (properties) {
+								selectednode = properties.nodes;
+								console.log(selectednode);
+								//var test = properties.title;
+								//console.log(test);
+								var url = "http://localhost/test2.php"
+								$.post(url,{node: selectednode},function(data) {
+								//$("#mynetwork").html(data).show();
+							
+								var data1 = JSON.parse(data);
+								
+								nodes.clear();
+								nodes.add(data1.nodes);
+								edges.clear();
+								edges.add(data1.edges);
+								
+								//nodes = data.nodes;
+								//edges = data.edges;
+								//redrawAll();
+								//network = vis.Network(container, data, options);
+								});
+							});
+							
+							
+		
+	});
+		
+</script>
+
+</body>
+</html>
