@@ -1,0 +1,287 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Network | Basic usage</title>
+
+  <script type="text/javascript" src="vis.js"></script>
+  <link href="vis.css" rel="stylesheet" type="text/css" />
+
+  <style type="text/css">
+  
+	#text1 {
+		text-align: leftt;
+		margin-left: 450px;	
+	}
+	
+	#heading1 {
+		margin-left: 250px;
+		float: left;
+	}
+	
+	#heading2 {
+		margin-left: 450px;
+		float: left;
+	}
+  
+	#allnetwork {
+		width: 1500px;
+		height: 500px;
+	}
+	
+    #mynetwork {
+      width: 600px;
+      height: 500px;
+      border: 1px solid lightgray;
+	  float: left;
+    }
+	#mynetwork1 {
+	  padding: 10px;
+	  text-align: center;
+      width: 450px;
+      height: 500px;
+      border: 1px solid lightgray;
+	  float: left;
+    }
+	#info1 {
+	  background-color:#eeeeee;
+	  padding: 10px;
+      width: 200px;
+      height: 500px;
+      border: 1px solid lightgray;
+	  float: left;
+    }
+	#info2 {
+	  background-color:#eeeeee;
+	  padding: 10px;
+      width: 200px;
+      height: 250px;
+      border: 1px solid lightgray;
+	  float: left;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1 id="text1"> Data Visualization </h1>
+<div id="heading1"> <h3>Global View </h3></div>
+<div id="heading2">  <h3>Local View  </h3></div>
+<div id="mynetwork"> </div>
+<div id="mynetwork1">Double Click a Node from Global View to get a Local View</div>
+<div id="info1"><b>Node Information</b></div>
+<!--<div id="info2"><b>Local Node Information</b></div>-->
+
+<script type="text/javascript" src="../../dist/vis.js"></script>
+<link href="../../dist/vis.css" rel="stylesheet" type="text/css" />
+<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+
+<script type="text/javascript">
+
+
+	var nodesGlobal;
+	var edgesGlobal;
+	var nodesLocal;
+	var edgesLocal;
+	var networkGlobal;
+	var networkLocal;
+	var containerGlobal;
+	var containerLocal;
+	var dataGlobal;
+	var dataLocal;
+	
+	var selectednodeGlobal;
+	var selectednodeLocal;
+	
+	
+	$.getJSON('http://localhost/test1.php', function(dataWhole) 
+	{	
+		var obj = dataWhole;
+		for (var nodeId in obj.nodes) {
+        obj.nodes[nodeId].x = parseInt(obj.nodes[nodeId].x);
+        obj.nodes[nodeId].y = parseInt(obj.nodes[nodeId].y);
+        obj.nodes[nodeId].value = parseInt(obj.nodes[nodeId].value);
+    } 
+	
+		nodesGlobal = new vis.DataSet();
+		edgesGlobal = new vis.DataSet();
+		//nodesGlobal.clear();
+		nodesGlobal.add(obj.nodes);
+		//edgesGlobal.clear();
+		edgesGlobal.add(obj.edges);
+		
+		containerGlobal = document.getElementById('mynetwork');
+		
+		dataGlobal = {
+			nodes: nodesGlobal,
+			//edges: edgesGlobal
+		};
+		
+		var optionsGlobal = {
+			//barnesHut: {enabled: false, repulsion: {nodeDistance: 300}, centralGravity: 0, springConstant: 0},
+			smoothCurves: {dynamic:false, type: "continuous"},
+			stabilize: false,
+			
+			nodes: {
+				color: {
+					background: "#89C7DB",
+					border: "#3BA1C3",
+					highlight: {
+						background: 'red',
+						border: 'red'
+						}
+					},
+				 shape: 'dot'
+				},
+				
+			edges: {
+			color: "#30829C"
+			}
+			};
+								
+		networkGlobal = new vis.Network(containerGlobal, dataGlobal, optionsGlobal);
+		networkGlobal.zoomExtent();
+		
+		var oldselectednode
+		
+		networkGlobal.on('doubleClick', function (propertiesGlobal) 
+		{
+				selectednodeGlobal = propertiesGlobal.nodes;
+				
+				if(selectednodeLocal != undefined)
+				{
+					var b = parseInt(oldselectednode[0]);
+					var GlobalOld =  nodesGlobal.get(b);
+					GlobalOld.color = '#89C7DB';
+					nodesGlobal.update(GlobalOld);
+				}
+				
+				oldselectednode = selectednodeGlobal;
+				
+				if(propertiesGlobal.nodes[0] != undefined)
+				{
+				
+				var url = "http://localhost/test2.php"
+				$.post(url,{node: selectednodeGlobal},function(dataL) 
+				{
+	
+						var dataTemp = JSON.parse(dataL);
+						var tempnodes1 = dataTemp.nodes;
+						var tempnodes = tempnodes1.sort(function(a,b) {return a.id - b.id;});
+						var len = tempnodes.length;
+						
+						for (var i = 0; i < len; i++) {
+						  tempnodes[i].x = 10;   
+						  tempnodes[i].y = 10*i;
+						  tempnodes[i].allowedToMoveX = true;  
+						  tempnodes[i].allowedToMoveY = true;
+						}
+								
+						nodesLocal = new vis.DataSet();
+						edgesLocal = new vis.DataSet();
+								
+						nodesLocal.clear();
+						nodesLocal.add(tempnodes);
+						edgesLocal.clear();
+						edgesLocal.add(dataTemp.edges);
+			
+						containerLocal = document.getElementById('mynetwork1');
+						
+						var dataLocal = 
+						{
+							nodes: nodesLocal,
+							edges: edgesLocal
+						};
+								
+						var optionsLocal = 
+						{
+							smoothCurves: {dynamic:false, type: "continuous"},
+							stabilize: true
+						};
+
+						networkLocal = new vis.Network(containerLocal, dataLocal, optionsLocal);
+						
+						networkLocal.on('doubleClick', function (propertiesNewLocal) 
+						{
+						
+							var b = parseInt(oldselectednode[0]);
+							var GlobalOld =  nodesGlobal.get(b);
+							GlobalOld.color = '#89C7DB';
+							nodesGlobal.update(GlobalOld);
+				
+							selectednodeLocal = propertiesNewLocal.nodes;
+							var a = parseInt(selectednodeLocal[0]);
+							var globalNode =  nodesGlobal.get(a);
+							globalNode.color = 'red';
+							nodesGlobal.update(globalNode);
+							
+							oldselectednode = selectednodeLocal;
+							
+							if(propertiesNewLocal.nodes[0] != undefined)
+							{
+							  
+							var url = "http://localhost/test2.php"
+							$.post(url,{node: selectednodeLocal},function(data) 
+							{
+									
+									var dataLocal1 = JSON.parse(data);
+									var tempnodesL1 = dataLocal1.nodes;
+									var tempnodesL = tempnodesL1.sort(function(a,b) {return a.id - b.id;});
+									var len1 = tempnodesL.length;
+									
+									for (var i = 0; i < len1; i++) {
+									  tempnodesL[i].x = 10;   
+									  tempnodesL[i].y = 10*i;
+									  tempnodesL[i].allowedToMoveX = true;  
+									  tempnodesL[i].allowedToMoveY = true;
+									  
+									}
+										
+									
+									nodesLocal.clear()
+									nodesLocal.add(tempnodesL);
+									edgesLocal.clear();
+									edgesLocal.add(dataLocal1.edges);
+									networkGlobal.redraw();
+									
+							});
+							
+							
+							var url = "http://localhost/test3.php"
+							$.post(url,{node: selectednodeLocal},function(dataInfoLocal) 
+							{
+								$('#info1').html('<b>' + 'Node Information'+ '</b>' + '<br>' + dataInfoLocal);
+							});
+							}
+							else
+							{
+								$('#info1').html('<b>' + 'Node Information'+ '</b>' + '<br>');
+							}
+							
+						});
+						
+						
+								
+				});
+				
+				
+					var url = "http://localhost/test3.php"
+					$.post(url,{node: selectednodeGlobal},function(dataInfoGlobal) 
+					{
+						$('#info1').html('<b>' + 'Node Information' + '</b>' + '<br>' + dataInfoGlobal);
+					});	
+				}
+				else
+				{
+					$('#info1').html('<b>' + 'Node Information' + '</b>' + '<br>');
+				}
+							
+		});
+	
+		
+	  
+	});
+		
+</script>
+</body>
+</html>
